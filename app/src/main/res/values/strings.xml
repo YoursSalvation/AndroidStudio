@@ -1,0 +1,7 @@
+<resources>
+    <string name="app_name">Lab2</string>
+    <string name="Russia">Автор - Владимир Владимирович.</string>
+    <string name="Germany">Автор - Райан Гослинг.</string>
+    <string name="About">Автор - Прохоров Дмитрий Сергеевич.</string>
+    <string name="title_activity_input">InputActivity</string>
+</resources>
