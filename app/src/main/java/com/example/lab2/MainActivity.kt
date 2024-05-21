@@ -71,6 +71,7 @@ import androidx.core.content.ContextCompat
 import coil.compose.rememberImagePainter
 import com.example.lab2.ui.theme.Lab2Theme
 import kotlinx.coroutines.launch
+import android.Manifest
 
 class MainActivity : ComponentActivity() {
     private val viewModel = ItemViewModel() //модель данных нашего списка
