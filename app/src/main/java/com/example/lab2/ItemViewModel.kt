@@ -6,11 +6,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import java.io.Serializable
 
-data class ProgrLang(val name: String, val surname: String, val form: String, var picture: Int = R.drawable.nopicture):Serializable
+data class ProgrLang(val name: String, val surname: String, val form: String, var picture: String = R.drawable.nopicture.toString()):Serializable
 class ItemViewModel : ViewModel() {
     private var langList = mutableStateListOf( //создаем список из языков программирования
-        ProgrLang("Russia", "Putin", "Democraty", R.drawable.putin),
-        ProgrLang("Germany", "Merkel", "Parlament", R.drawable.merkel)
+        ProgrLang("Russia", "Putin", "Democraty", R.drawable.putin.toString()),
+        ProgrLang("Germany", "Merkel", "Parlament", R.drawable.merkel.toString())
     )
     //добавляем объект, который будет отвечать за изменения в созданном списке
     private val _langListFlow = MutableStateFlow(langList)
@@ -28,5 +28,8 @@ class ItemViewModel : ViewModel() {
     fun removeItem(item: ProgrLang) { //метод для удаления элемента из списка
         val index = langList.indexOf(item)
         langList.remove(langList[index])
+    }
+    fun changeImage(index: Int, value: String) {
+        langList[index] = langList[index].copy(picture = value)
     }
 }

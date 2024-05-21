@@ -3,8 +3,10 @@ package com.example.lab2
 import android.app.Activity
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.content.res.Resources
 import android.os.Bundle
+import android.provider.MediaStore
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -45,6 +47,8 @@ import androidx.compose.material3.TextField
 import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.State
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -62,6 +66,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import coil.compose.rememberImagePainter
 import com.example.lab2.ui.theme.Lab2Theme
 import kotlinx.coroutines.launch
 
@@ -173,6 +180,7 @@ fun MakeAppBar(model: ItemViewModel, lazyListState: LazyListState) {
 
 @Composable
 fun MakeList(viewModel: ItemViewModel, lazyListState: LazyListState) {
+    val langListState = viewModel.langListFlow.collectAsState()
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
         modifier = Modifier
@@ -184,7 +192,7 @@ fun MakeList(viewModel: ItemViewModel, lazyListState: LazyListState) {
             items = viewModel.langListFlow.value,
             key = { lang -> lang.name },
             itemContent = { item ->
-                ListRow(item)
+                ListRow(item, langListState, viewModel)
             }
         )
     }
@@ -215,12 +223,25 @@ fun MakeAlertDialog(context: Context, dialogTitle: String, openDialog: MutableSt
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListRow(item: ProgrLang){ //ф-ия для создания ряда с данными для LazyColumn
+fun ListRow(model: ProgrLang, langListState: State<List<ProgrLang>>, viewModel: ItemViewModel){ //ф-ия для создания ряда с данными для LazyColumn
     val context = LocalContext.current
     val openDialog = remember { mutableStateOf(false)} //по умолчанию – false, т.е. окно не вызвано
     val langSelected = remember { mutableStateOf("") } // и переменная для сохранения названия языка
     if (openDialog.value) //если дочернее окно (AlertDialog) вызвано
         MakeAlertDialog(context, langSelected.value, openDialog)
+    var mDisplayMenu by remember { mutableStateOf(false) }
+//объект для запуска деятельности выбора нового изображения
+//запускается метод rememberLauncherForActivityResult с контрактом на получение данных
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+//res – результат выполнения метода
+            if (res.data?.data != null) { //если была выбрана новая картинка
+                println("image uri = ${res.data?.data}") //отладочный вывод (будет в разделе Run внизу IDE)
+                val imgURI = res.data?.data //берем адрес картинки
+                val index = langListState.value.indexOf(model) //получаем индекс текущего объекта в списке
+                viewModel.changeImage(index, imgURI.toString())//и меняем картинку для нужного языка
+            }
+        }
     Row( //создаем ряд с данными
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -230,41 +251,76 @@ fun ListRow(item: ProgrLang){ //ф-ия для создания ряда с да
             .border(BorderStroke(2.dp, Color.Blue)) //синяя граница для каждого эл-та списка
             .combinedClickable(
                 onClick = {
-                    println("item = ${item.name}")
-                    langSelected.value = item.name
+                    println("item = ${model.name}")
+                    langSelected.value = model.name
                     Toast
-                        .makeText(context, "item = ${item.name}", Toast.LENGTH_LONG)
+                        .makeText(context, "item = ${model.name}", Toast.LENGTH_LONG)
                         .show()
                     openDialog.value = true
-                }
+                },
+                onLongClick = { mDisplayMenu = true } //меняем значение объекта для меню
             )
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text( // поле с текстом для названия языка
-                text = item.name, //берем имя языка
+                text = model.name, //берем имя языка
                 fontSize = 24.sp, //устанавливаем размер шрифта
                 fontWeight = FontWeight.SemiBold, //делаем текст жирным
                 //и добавляем отступ слева
                 modifier = Modifier.padding(start = 20.dp)
             )
             Text( // поле с текстом для года создания языка
-                text = item.surname, //берем год и преобразуем в строку
+                text = model.surname, //берем год и преобразуем в строку
                 fontSize = 20.sp, //устанавливаем размер шрифта
                 modifier = Modifier.padding(10.dp), //добавляем отступ
                 fontStyle = FontStyle.Italic //и делаем шрифт курсивом
             )
             Text( // поле с текстом для года создания языка
-                text = item.form, //берем год и преобразуем в строку
+                text = model.form, //берем год и преобразуем в строку
                 fontSize = 20.sp, //устанавливаем размер шрифта
                 modifier = Modifier.padding(10.dp), //добавляем отступ
                 fontStyle = FontStyle.Italic //и делаем шрифт курсивом
             )
         }
+        DropdownMenu(//создаем контекстное меню
+            expanded = mDisplayMenu, //связываем его св-во, отвечающее за показ меню, с объектом
+            onDismissRequest = { mDisplayMenu = false }
+        ) {
+            DropdownMenuItem( //вставляем нужный пункт меню
+                text = { Text(text = "Поменять картинку", fontSize = 20.sp) },
+                onClick = { //обрабатываем нажатие на него
+                    mDisplayMenu = !mDisplayMenu //меняем объект, отвечающий за открытие меню
+                    //получаем разрешение на чтение внешних ресурсов
+                    val permission: String = Manifest.permission.READ_EXTERNAL_STORAGE
+                    val grant = ContextCompat.checkSelfPermission(context, permission)
+                    if (grant != PackageManager.PERMISSION_GRANTED) {
+                        val permission_list = arrayOfNulls<String>(1)
+                        permission_list[0] = permission
+                        ActivityCompat.requestPermissions(context as Activity, permission_list,1)
+                    }
+//создаем намерение на получение внешнего объекта в виде картинки
+                    val intent = Intent(Intent.ACTION_OPEN_DOCUMENT,
+                        MediaStore.Images.Media.EXTERNAL_CONTENT_URI).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE) }
+                    launcher.launch(intent) //стартуем объект для получения картинки
+                }
+            )
+        }
         Image(//нужен import androidx.compose.foundation.Image
-            painter = painterResource(id = item.picture), //указываем источник изображения
+            painter = if (pictureIsInt(model.picture)) painterResource(model.picture.toInt())
+            else rememberImagePainter(model.picture),
             contentDescription = "", //можно вставить описание изображения
             contentScale = ContentScale.Fit, //параметры масштабирования изображения
             modifier = Modifier.size(90.dp)
         )
     }
+}
+fun pictureIsInt(picture: String): Boolean{ //ф-ия для проверки источника изображения
+// переменной data присваиваем результат блока try … catch
+    var data = try { //пробуем перевести строку с ресурсом картинки в число, т.к. внутренние
+        picture.toInt() //ресурсы приложения хранятся в виде числового id
+    } catch (e:NumberFormatException){ //если строка не переводится в число, то значит это
+        null //изображение из внешних ресурсов и присваиваем null
+    } //в результате data будет равна либо picture.toInt(), либо null
+    return data!=null //результат ф-ии зависит от значения переменной data
 }
