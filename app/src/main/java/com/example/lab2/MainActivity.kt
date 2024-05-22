@@ -78,6 +78,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         //если в хранилище есть наш массив с языками программирования
+        val dbHelper = LangsDbHelper(this) //создаем объект класса LangsDbHelper
         if (savedInstanceState!=null && savedInstanceState.containsKey("langs")) {
             //то в нашу модель переписываем эл-ты из savedInstanceState
             val tempLangArray = savedInstanceState.getSerializable("langs") as ArrayList<ProgrLang>
@@ -86,7 +87,26 @@ class MainActivity : ComponentActivity() {
                 viewModel.addLangToEnd(it)
             }
             Toast.makeText(this, "From saved", Toast.LENGTH_SHORT).show()
-        } else Toast.makeText(this, "From create", Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(this, "From create", Toast.LENGTH_SHORT).show()
+            if (dbHelper!!.isEmpty()) { //если БД пустая
+                println("DB is emty")
+                var tempLangArray = ArrayList<ProgrLang>()//временный ArrayList для сохранения данных
+                viewModel.langListFlow.value.forEach {//переносим данные из нашего основного массива
+                    tempLangArray.add(it)
+                }
+                dbHelper!!.addArrayToDB(tempLangArray) //заносим в БД наш массив
+                dbHelper!!.printDB() //и выводим в консоль для проверки
+            } else { //иначе, если в БД есть записи
+                println("DB has records")
+                dbHelper!!.printDB() //выводим записи в консоль для проверки
+                val tempLangArray = dbHelper!!.getLangsArray() //берем записи из БД в виде массива
+                viewModel.clearList() //очищаем нашу модель данных
+                tempLangArray.forEach {//и в цикле по массиву переносим данные в нашу модель
+                    viewModel.addLangToEnd(it)
+                }
+            }
+        }
         setContent {
             val lazyListState = rememberLazyListState() //объект для сохранения состояния списка
             Lab2Theme {
@@ -95,9 +115,9 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     Column(Modifier.fillMaxSize()) { //создаем колонку
-                        MakeAppBar(viewModel, lazyListState)
+                        MakeAppBar(viewModel, lazyListState, dbHelper!!)
                         //MakeInputPart(viewModel, lazyListState)//вызываем ф-ию для создания полей ввода данных
-                        MakeList(viewModel, lazyListState) //вызываем ф-ию для самого списка с данными
+                        MakeList(viewModel, lazyListState, dbHelper!!) //вызываем ф-ию для самого списка с данными
                     }
                 }
             }
@@ -117,7 +137,7 @@ class MainActivity : ComponentActivity() {
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MakeAppBar(model: ItemViewModel, lazyListState: LazyListState) {
+fun MakeAppBar(model: ItemViewModel, lazyListState: LazyListState, dbHelper: LangsDbHelper) {
 //создаем объект для хранения состояния меню – открыто (true) или нет (false)
     var mDisplayMenu by remember { mutableStateOf(false) }
     val mContext = LocalContext.current // контекст нашего приложения
@@ -132,6 +152,7 @@ fun MakeAppBar(model: ItemViewModel, lazyListState: LazyListState) {
                 val newLang = result.data?.getSerializableExtra("newItem") as ProgrLang //как язык
                 println("new lang name = ${newLang.name}") //вывод для отладки
                 model.addLangToHead(newLang)
+                dbHelper.addLang(newLang)
                 scope.launch {//прокручиваем список, чтобы был виден добавленный элемент
                     lazyListState.scrollToItem(0)
                 }
@@ -180,7 +201,7 @@ fun MakeAppBar(model: ItemViewModel, lazyListState: LazyListState) {
 }
 
 @Composable
-fun MakeList(viewModel: ItemViewModel, lazyListState: LazyListState) {
+fun MakeList(viewModel: ItemViewModel, lazyListState: LazyListState, dbHelper: LangsDbHelper) {
     val langListState = viewModel.langListFlow.collectAsState()
     LazyColumn(
         verticalArrangement = Arrangement.spacedBy(12.dp),
@@ -193,7 +214,7 @@ fun MakeList(viewModel: ItemViewModel, lazyListState: LazyListState) {
             items = viewModel.langListFlow.value,
             key = { lang -> lang.name },
             itemContent = { item ->
-                ListRow(item, langListState, viewModel)
+                ListRow(item, langListState, viewModel, dbHelper)
             }
         )
     }
@@ -224,7 +245,7 @@ fun MakeAlertDialog(context: Context, dialogTitle: String, openDialog: MutableSt
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-fun ListRow(model: ProgrLang, langListState: State<List<ProgrLang>>, viewModel: ItemViewModel){ //ф-ия для создания ряда с данными для LazyColumn
+fun ListRow(model: ProgrLang, langListState: State<List<ProgrLang>>, viewModel: ItemViewModel, dbHelper: LangsDbHelper){ //ф-ия для создания ряда с данными для LazyColumn
     val context = LocalContext.current
     val openDialog = remember { mutableStateOf(false)} //по умолчанию – false, т.е. окно не вызвано
     val langSelected = remember { mutableStateOf("") } // и переменная для сохранения названия языка
@@ -241,6 +262,7 @@ fun ListRow(model: ProgrLang, langListState: State<List<ProgrLang>>, viewModel: 
                 val imgURI = res.data?.data //берем адрес картинки
                 val index = langListState.value.indexOf(model) //получаем индекс текущего объекта в списке
                 viewModel.changeImage(index, imgURI.toString())//и меняем картинку для нужного языка
+                dbHelper!!.changeImgForLang(model.name, imgURI.toString())//меняем картинку в БД
             }
         }
     Row( //создаем ряд с данными
