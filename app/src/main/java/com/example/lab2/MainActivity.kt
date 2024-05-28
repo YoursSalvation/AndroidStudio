@@ -72,6 +72,16 @@ import coil.compose.rememberImagePainter
 import com.example.lab2.ui.theme.Lab2Theme
 import kotlinx.coroutines.launch
 import android.Manifest
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.height
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.rounded.Menu
+import androidx.compose.material3.DrawerValue
+import androidx.compose.material3.ModalDrawerSheet
+import androidx.compose.material3.ModalNavigationDrawer
+import androidx.compose.material3.NavigationDrawerItem
+import androidx.compose.material3.NavigationDrawerItemDefaults
+import androidx.compose.material3.rememberDrawerState
 
 class MainActivity : ComponentActivity() {
     private val viewModel = ItemViewModel() //модель данных нашего списка
@@ -117,7 +127,6 @@ class MainActivity : ComponentActivity() {
                     Column(Modifier.fillMaxSize()) { //создаем колонку
                         MakeAppBar(viewModel, lazyListState, dbHelper!!)
                         //MakeInputPart(viewModel, lazyListState)//вызываем ф-ию для создания полей ввода данных
-                        MakeList(viewModel, lazyListState, dbHelper!!) //вызываем ф-ию для самого списка с данными
                     }
                 }
             }
@@ -161,6 +170,7 @@ fun MakeAppBar(model: ItemViewModel, lazyListState: LazyListState, dbHelper: Lan
 
     if (openDialog.value) //если дочернее окно вызвано, то запускаем функцию для его создания
         MakeAlertDialog(context = mContext, dialogTitle = "About", openDialog = openDialog)
+    val drawerStateObj = rememberDrawerState(initialValue = DrawerValue.Closed)
     TopAppBar( //создаем верхнюю панель нашего приложения, в нем будет меню
         title = { Text("Страны") }, //заголовок в верхней панели
         actions = { //здесь разные действия можно прописать, например, иконку для меню
@@ -195,6 +205,50 @@ fun MakeAppBar(model: ItemViewModel, lazyListState: LazyListState, dbHelper: Lan
                         mDisplayMenu = !mDisplayMenu //и меняем признак открытия меню
                     }
                 )
+            }
+        },
+        navigationIcon = { //описываем левую кнопку с навигацией (три горизонтальных полоски)
+            IconButton( //кнопка с иконкой
+                onClick = { //при нажатии на нее будет раскрываться или закрываться меню
+                    scope.launch {
+                        if (drawerStateObj.isClosed) drawerStateObj.open() //для открытия
+                        else drawerStateObj.close() //для закрытия
+                    }
+                },
+            ) {
+                Icon( //для самой иконки
+                    Icons.Rounded.Menu, //берем изображение из системных ресурсов
+                    contentDescription = "" //можно добавить описание
+                )
+            }
+        }
+    )
+    ModalNavigationDrawer( //это само боковое левое меню
+        drawerState = drawerStateObj, //параметр, отвечающий за раскрытие меню, связываем с нашим объектом
+        drawerContent = { //содержимое меню
+            ModalDrawerSheet { //лист с меню
+                Spacer(Modifier.height(12.dp)) //отступ
+                NavigationDrawerItem( //пункт меню
+                    icon = { Icon(Icons.Default.Star, contentDescription = null) }, //иконка для него
+                    label = { Text("Drawing") }, //текст для него
+                    selected = false, //выбран или нет (актуально, когда несколько эл-ов)
+                    onClick = { //обработчик нажатия
+                        scope.launch { drawerStateObj.close() } //закрываем меню
+                        val newAct = Intent(mContext, DrawingActivity::class.java)//создаем намерение
+                        mContext.startActivity(newAct) //и запускаем новое активити (описано ниже)
+                    },
+                    modifier = Modifier.padding(NavigationDrawerItemDefaults.ItemPadding)
+                )
+            }
+        },
+        content = { //а здесь содержимое нашего приложения, сюда переносим вызов метода MakeList
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(16.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                MakeList(viewModel = model, lazyListState, dbHelper)
             }
         }
     )

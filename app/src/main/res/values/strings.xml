@@ -4,4 +4,9 @@
     <string name="Germany">Автор - Райан Гослинг.</string>
     <string name="About">Автор - Прохоров Дмитрий Сергеевич.</string>
     <string name="title_activity_input">InputActivity</string>
+    <string name="title_activity_drawing" translatable="false">DrawingActivity</string>
+    <string name="title_activity_drawing2" translatable="false">DrawingActivity2</string>
+    <string name="rect">Rect</string>
+    <string name="circle">Circle</string>
+    <string name="image">Image</string>
 </resources>
