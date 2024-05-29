@@ -9,4 +9,19 @@
     <string name="rect">Rect</string>
     <string name="circle">Circle</string>
     <string name="image">Image</string>
+    <string name="chosewidth">Choose Width</string>
+    <string name="tempWidth">Temp Width</string>
+    <string name="color">color</string>
+    <string name="green">green</string>
+    <string name="red">red</string>
+    <string name="yellow">yellow</string>
+    <string name="blue">blue</string>
+    <string name="styles">styles</string>
+    <string name="stroke">stroke</string>
+    <string name="fill">fill</string>
+    <string name="fillAndStroke">fill and stroke</string>
+    <string name="fam">surname</string>
+    <string name="style">style</string>
+    <string name="width">width</string>
+    <string name="save">save</string>
 </resources>

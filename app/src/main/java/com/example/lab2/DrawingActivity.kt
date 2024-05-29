@@ -64,6 +64,23 @@ class DrawingActivity : ComponentActivity() {
 }
 @Composable
 fun MakeTopButtons(buttonNames: Array<String>, myView: MyGraphView?) {
+    val openWidth = remember { mutableStateOf(false) } //объект для состояния дочернего окна
+    val openColor = remember { mutableStateOf(false) } //объект для состояния дочернего окна
+    val openStyle = remember { mutableStateOf(false) } //объект для состояния дочернего окна
+    val openSave = remember { mutableStateOf(false) } //объект для состояния дочернего окна
+
+    if (openWidth.value) {
+        myView?.ShowLineWidthPicker(openWidth)
+    }
+    if (openColor.value) {
+        myView?.ShowColorPicker(openColor)
+    }
+    if (openStyle.value) {
+        myView?.ShowStylePicker(openStyle)
+    }
+    if (openSave.value) {
+        myView?.onSaveClick(openSave)
+    }
     Row(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceEvenly,
@@ -79,6 +96,54 @@ fun MakeTopButtons(buttonNames: Array<String>, myView: MyGraphView?) {
             }) {
                 Text(text = it) //текст для каждой кнопки
             }
+        }
+    }
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = Modifier
+            .wrapContentHeight()
+            .fillMaxWidth()
+            .border(BorderStroke(2.dp, Color.Blue))
+    ) {
+
+        Button(onClick = { //цикл по названиям кнопок
+//и вызываем из массива функций нужный метод согласно номеру кнопки в массиве
+            openSave.value = true
+        }) {
+            Text(
+                text = stringResource(R.string.save)
+            ) //текст для каждой кнопки
+        }
+        Button(onClick = {
+            openWidth.value = true
+        }) {
+            Text(text =  stringResource(R.string.width)) //текст для каждой кнопки
+        }
+        Button(onClick = {
+            openColor.value = true
+        }) {
+            Text(text =  stringResource(R.string.color)) //текст для каждой кнопки
+        }
+        Button(onClick = {
+            openStyle.value = true
+        }) {
+            Text(text =  stringResource(R.string.style)) //текст для каждой кнопки
+        }
+
+    }
+    Row (
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceEvenly,
+        modifier = Modifier
+            .wrapContentHeight()
+            .fillMaxWidth()
+            .border(BorderStroke(2.dp, Color.Blue))
+    ) {
+        Button(onClick = {
+            myView?.drawfam()
+        }) {
+            Text(text =  stringResource(R.string.fam)) //текст для каждой кнопки
         }
     }
 }

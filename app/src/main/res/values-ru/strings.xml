@@ -1,6 +1,27 @@
 <resources>
-    <string name="app_name">Пример</string>
-    <string name="rect">Прямоугольник</string>
+    <string name="app_name">Лаб2</string>
+    <string name="Russia">Автор - Владимир Владимирович.</string>
+    <string name="Germany">Автор - Райан Гослинг.</string>
+    <string name="About">Автор - Прохоров Дмитрий Сергеевич.</string>
+    <string name="title_activity_input">InputActivity</string>
+    <string name="title_activity_drawing" translatable="false">DrawingActivity</string>
+    <string name="title_activity_drawing2" translatable="false">DrawingActivity2</string>
+    <string name="rect">Квадрат</string>
     <string name="circle">Круг</string>
-    <string name="image">Изображение</string>
+    <string name="image">Картинка</string>
+    <string name="chosewidth">Выбрать ширину</string>
+    <string name="tempWidth">Текущая ширина</string>
+    <string name="color">Цвет</string>
+    <string name="green">зеленый</string>
+    <string name="red">красный</string>
+    <string name="yellow">желтый</string>
+    <string name="blue">голубой</string>
+    <string name="styles">стили</string>
+    <string name="stroke">обвести</string>
+    <string name="fill">заполнить</string>
+    <string name="fillAndStroke">заполнить и обвести</string>
+    <string name="fam">фамилия</string>
+    <string name="style">стиль</string>
+    <string name="width">ширина</string>
+    <string name="save">сохранить</string>
 </resources>
