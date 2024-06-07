@@ -1,5 +1,6 @@
 package com.example.lab2
 
+import android.content.ContentResolver
 import android.graphics.BitmapFactory
 import android.widget.Toast
 import android.content.Context
@@ -27,11 +28,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
-
-
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
 import java.io.File
 import java.io.FileOutputStream
 import java.io.OutputStream
+import androidx.activity.compose.ManagedActivityResultLauncher
+import androidx.activity.result.ActivityResult
+import androidx.compose.foundation.layout.*
+import android.net.Uri
+import android.provider.MediaStore
+import android.content.Intent
+import android.content.pm.PackageManager
+import android.Manifest
+import android.app.Activity
 
 class MyGraphView(context: Context?) : View(context) {
     private lateinit var path: Path
@@ -83,10 +94,17 @@ class MyGraphView(context: Context?) : View(context) {
         mCanvas!!.drawRect(200f, 200f, 300f, 300f, mPaint!!)
         invalidate()
     }
-    fun drawFace() { //метод для рисования картинки из файла
+    fun Context.getMyContentResolver(): ContentResolver {
+        return this.contentResolver
+    }
+    fun drawFace(imgUri: Uri?) { //метод для рисования картинки из файла
 //создаем временный битмап из файла
-        val mBitmapFromSdcard = BitmapFactory.decodeFile("/mnt/sdcard/face.png")
-        mCanvas!!.drawBitmap(mBitmapFromSdcard, 100f, 100f, mPaint) //рисуем его на нашем канвасе
+        val contentResolver = context.getMyContentResolver()
+        val bitmap = MediaStore.Images.Media.getBitmap(this.context.contentResolver, imgUri)
+
+        //val mBitmapFromSdcard = BitmapFactory.decodeFile("/mnt/sdcard/newpicture.jpg")
+        // val bitmap = getBitmapFromUri(LocalContext.current.contentResolver, imgUri)
+        mCanvas!!.drawBitmap(bitmap, 100f, 100f, mPaint) //рисуем его на нашем канвасе
         invalidate()
     }
     @Composable
@@ -126,6 +144,45 @@ class MyGraphView(context: Context?) : View(context) {
             )
 
         }
+
+    }
+
+    @Composable
+    fun ShowImagePicker(
+        openDialog: MutableState<Boolean>,
+        launcher: ManagedActivityResultLauncher<Intent, ActivityResult>
+    ) {
+
+
+        val context = LocalContext.current //получаем текущий контекст
+
+        var mDisplayMenu by remember { mutableStateOf(false) }
+
+        val permission: String = Manifest.permission.READ_EXTERNAL_STORAGE
+        val grant = ContextCompat.checkSelfPermission(context, permission)
+        if (grant != PackageManager.PERMISSION_GRANTED) {
+            val permission_list = arrayOfNulls<String>(1)
+            permission_list[0] = permission
+            ActivityCompat.requestPermissions(context as Activity, permission_list, 1)
+        }
+
+
+
+        // openDialog.value = !openDialog.value
+        mDisplayMenu = !mDisplayMenu
+
+
+//создаем намерение на получение внешнего объекта в виде картинки
+        val intent = Intent(
+
+            Intent.ACTION_OPEN_DOCUMENT,
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        ).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            println("dsdf")
+        }
+        launcher.launch(intent)
+        println("LAUNCHERLFJD")
 
     }
 
@@ -253,7 +310,7 @@ class MyGraphView(context: Context?) : View(context) {
     }
 
     //создаем массив функций (понадобится позже)
-    val funcArray = arrayOf(::drawSquare, ::drawCircle, ::drawFace)
+    val funcArray = arrayOf(::drawSquare, ::drawCircle)
 
     fun onConfirm(value: Float) {
         mPaint?.setStrokeWidth(value) //толщина линии рисования

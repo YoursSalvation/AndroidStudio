@@ -1,6 +1,9 @@
 package com.example.lab2
 
+import android.content.ContentResolver
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -30,6 +33,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.viewinterop.AndroidView
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
+import androidx.compose.ui.platform.LocalContext
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.compose.rememberLauncherForActivityResult
+import android.provider.MediaStore
+import android.Manifest
+import android.app.Activity
+import android.content.Intent
+import android.content.pm.PackageManager
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 
 class DrawingActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -38,7 +53,7 @@ class DrawingActivity : ComponentActivity() {
             val buttonNames = arrayOf(
                 stringResource(R.string.rect),
                 stringResource(R.string.circle),
-                stringResource(R.string.image),
+                //stringResource(R.string.image),
                 //stringResource(R.string.save) //добавляем надпись для кнопки Save
             )
 // создаем наш объект для рисования
@@ -62,12 +77,28 @@ class DrawingActivity : ComponentActivity() {
         }
     }
 }
+fun getBitmapFromUri(contentResolver: ContentResolver, uri: Uri): Bitmap {
+    return BitmapFactory.decodeStream(contentResolver.openInputStream(uri))
+}
 @Composable
 fun MakeTopButtons(buttonNames: Array<String>, myView: MyGraphView?) {
+    val launcher =
+        rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()) { res ->
+//res – результат выполнения метода
+            println("Inlauncher")
+            if (res.data?.data != null) { //если была выбрана новая картинка
+                //println("LAUNCHER")
+                println("image uri = ${res.data?.data}") //отладочный вывод (будет в разделе Run внизу IDE)
+                val imgURI = res.data?.data //берем адрес картинки
+                myView?.drawFace(imgURI)
+            }
+        }
+
     val openWidth = remember { mutableStateOf(false) } //объект для состояния дочернего окна
     val openColor = remember { mutableStateOf(false) } //объект для состояния дочернего окна
     val openStyle = remember { mutableStateOf(false) } //объект для состояния дочернего окна
     val openSave = remember { mutableStateOf(false) } //объект для состояния дочернего окна
+    val openImage = remember { mutableStateOf(false) }
 
     if (openWidth.value) {
         myView?.ShowLineWidthPicker(openWidth)
@@ -80,6 +111,31 @@ fun MakeTopButtons(buttonNames: Array<String>, myView: MyGraphView?) {
     }
     if (openSave.value) {
         myView?.onSaveClick(openSave)
+    }
+    if (openImage.value) {
+        val context = LocalContext.current //получаем текущий контекст
+        var mDisplayMenu by remember { mutableStateOf(false) }
+
+        val permission: String = Manifest.permission.READ_EXTERNAL_STORAGE
+        val grant = ContextCompat.checkSelfPermission(context, permission)
+        if (grant != PackageManager.PERMISSION_GRANTED) {
+            val permission_list = arrayOfNulls<String>(1)
+            permission_list[0] = permission
+            ActivityCompat.requestPermissions(context as Activity, permission_list, 1)
+        }
+
+        val intent = Intent(
+
+            Intent.ACTION_OPEN_DOCUMENT,
+            MediaStore.Images.Media.EXTERNAL_CONTENT_URI
+        ).apply {
+            addCategory(Intent.CATEGORY_OPENABLE)
+            println("dsdf")
+        }
+        launcher.launch(intent)
+        openImage.value=false
+
+
     }
     Row(
         verticalAlignment = Alignment.CenterVertically,
@@ -144,6 +200,11 @@ fun MakeTopButtons(buttonNames: Array<String>, myView: MyGraphView?) {
             myView?.drawfam()
         }) {
             Text(text =  stringResource(R.string.fam)) //текст для каждой кнопки
+        }
+        Button(onClick = {
+            openImage.value=true
+        }) {
+            Text(text =  stringResource(R.string.image)) //текст для каждой кнопки
         }
     }
 }
